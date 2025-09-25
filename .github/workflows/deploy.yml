@@ -6,6 +6,7 @@ on:
     # 只在后端相关变更时触发，减少无效构建
     paths:
       - 'app/**'
+      - 'api/**'
       - 'requirements.txt'
       - 'Dockerfile'
       - '.github/workflows/deploy.yml'
