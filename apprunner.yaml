@@ -1,0 +1,14 @@
+version: 1.0
+runtime: python3
+
+build:
+  commands:
+    build:
+      - pip install -r requirements.txt
+    post-build:
+      - python -c "import fastapi, uvicorn; print('Deps OK')"
+
+run:
+  command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level info
+  network:
+    port: 8000
