@@ -171,7 +171,7 @@ def build_rules_section(jurisdiction: dict | None) -> str:
     )
 
 def _client_from_env() -> OpenAI:
-    api_key = "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"
+    api_key = os.getenv("OPENAI_API_KEY")
 
     http_client = httpx.Client(
         http2=False,
