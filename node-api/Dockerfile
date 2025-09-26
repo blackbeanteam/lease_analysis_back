@@ -4,7 +4,7 @@ WORKDIR /app
 
 # 仅复制 node-api 构建相关清单
 COPY node-api/package.json node-api/tsconfig.json ./
-RUN npm ci
+RUN npm install
 
 # 复制源码：node-api/src + api 源（编译时要用到）
 COPY node-api/src ./src
@@ -19,7 +19,7 @@ WORKDIR /app
 
 # 仅装运行期依赖
 COPY node-api/package.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # 放入编译好的 dist
 COPY --from=builder /app/dist ./dist
