@@ -1,23 +1,50 @@
-name: Build & Push to ECR
+name: Build & Push to ECR (backend + node-api)
 
 on:
   push:
     branches: [ main ]
-    # 只在后端相关变更时触发，减少无效构建
+    # 任一相关目录改动都触发
     paths:
+      # Python 后端
       - 'app/**'
-      - 'api/**'
       - 'requirements.txt'
       - 'Dockerfile'
+      # Node 适配层与它依赖的 TS 路由
+      - 'node-api/**'
+      - 'api/blob/**'
+      # 自己
       - '.github/workflows/deploy.yml'
-  workflow_dispatch: {}   # 允许在 Actions 页面手动触发
+  workflow_dispatch: {}
 
 jobs:
-  build:
+  # 1) 先判定这次提交改了哪些路径，只跑必要的 job
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      nodeapi: ${{ steps.filter.outputs.nodeapi }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'app/**'
+              - 'requirements.txt'
+              - 'Dockerfile'
+            nodeapi:
+              - 'node-api/**'
+              - 'api/blob/**'
+
+  # 2) 构建并推送 Python(FastAPI) 镜像 → ECR: lease_analysis_back
+  backend-python:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     env:
       ECR_REPO: lease_analysis_back
-
     steps:
       - uses: actions/checkout@v4
 
@@ -37,13 +64,54 @@ jobs:
           aws ecr describe-repositories --repository-names "$ECR_REPO" || \
           aws ecr create-repository --repository-name "$ECR_REPO"
 
-      - name: Build & Push image
+      - name: Build & Push (Python backend)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: .                # 仓库根；你的后端 Dockerfile 在根
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ github.sha }}
           cache-from: type=registry,ref=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
           cache-to: type=inline
+
+  # 3) 构建并推送 Node 适配层镜像 → ECR: lease_blob_api
+  node-adapter:
+    needs: changes
+    if: needs.changes.outputs.nodeapi == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ECR_REPO: lease_blob_api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names "$ECR_REPO" || \
+          aws ecr create-repository --repository-name "$ECR_REPO"
+
+      - name: Build & Push (Node adapter)
+        uses: docker/build-push-action@v6
+        with:
+          # 重要：用仓库根做 context，这样能 COPY 到 api/blob/**
+          context: .
+          file: node-api/Dockerfile     # 使用 node-api 下的 Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
+          cache-to: type=inline
+
