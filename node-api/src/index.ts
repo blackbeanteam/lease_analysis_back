@@ -2,9 +2,9 @@ import express from "express";
 import cors from "cors";
 
 // 你的三个 Vercel 风格的处理器（默认导出）
-import fetchHandler from "../../api/blob/fetch";
-import signHandler from "../../api/blob/sign";
-import deleteHandler from "../../api/blob/delete";
+import fetchHandler from "../api/blob/fetch";
+import signHandler from "../api/blob/sign";
+import deleteHandler from "../api/blob/delete";
 
 // 建一个 app（单进程 http 服务）
 export const app = express();
