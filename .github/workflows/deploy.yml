@@ -82,7 +82,7 @@ jobs:
     if: needs.changes.outputs.nodeapi == 'true'
     runs-on: ubuntu-latest
     env:
-      ECR_REPO: lease_blob_api
+      ECR_REPO: lease_analysis_node_api
     steps:
       - uses: actions/checkout@v4
 
