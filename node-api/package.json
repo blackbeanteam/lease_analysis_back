@@ -1,5 +1,5 @@
 {
-  "name": "lease-analysis-node-api",
+  "name": "lease_analysis_node_api",
   "private": true,
   "type": "module",
   "scripts": {
