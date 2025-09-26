@@ -25,3 +25,4 @@ app.post("/api/blob/sign", (req, res) => signHandler(req as any, res as any));
 app.delete("/api/blob/delete", (req, res) => deleteHandler(req as any, res as any));
 
 // 你也可以继续增加其他路由映射…
+
