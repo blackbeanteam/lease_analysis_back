@@ -1,0 +1,20 @@
+{
+  "name": "lease-blob-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@vercel/node": "^3.2.20",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.3"
+  }
+}
