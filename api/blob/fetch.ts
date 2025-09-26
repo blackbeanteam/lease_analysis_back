@@ -2,7 +2,7 @@
 export const runtime = 'nodejs';
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { makeGcsClient, bucketName } from '../../lib/gcs.js'; // 注意 .js 后缀
+import { makeGcsClient, bucketName } from './gcs.js'; // 注意 .js 后缀
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
