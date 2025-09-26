@@ -2,7 +2,7 @@
 export const runtime = 'nodejs';
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { makeGcsClient, bucketName } from '../../lib/gcs.js';
+import { makeGcsClient, bucketName } from './gcs.js';
 
 type DeleteReq =
   | { pathname: string }                         // 单个
