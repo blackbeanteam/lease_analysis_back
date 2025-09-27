@@ -145,9 +145,11 @@ def create_app() -> FastAPI:
     @app.get("/worker/tick")
     def worker_tick(request: Request, single: str | None = None):
         log.info(f"[worker] start single={single!r}")
+        print(f"[worker] start single={single!r}")
         handled = 0
         ids = [single] if single else pop_jobs(max_n=3)
         log.info(f"[worker] pop -> {ids}")
+        print(f"[worker] pop -> {ids}")
 
         for job_id in ids:
             if not job_id:
@@ -158,15 +160,18 @@ def create_app() -> FastAPI:
                 data = get_job(job_id)
                 if not data:
                     log.warning(f"[worker] job_id={job_id} hgetall miss")
+                    print(f"[worker] job_id={job_id} hgetall miss")
                     continue
                 filename = data["filename"]
                 debug = data.get("debug", False)
                 log.info(f"[worker] job_id={job_id} file={filename!r} debug={debug}")
+                print(f"[worker] job_id={job_id} file={filename!r} debug={debug}")
 
                 # Acquire PDF bytes: prefer private Blob pathname
                 raw = None
                 blob_pathname = data.get("blob_pathname")
                 log.info(f"[worker] fetching blob_pathname={blob_pathname!r}")
+                print(f"[worker] fetching blob_pathname={blob_pathname!r}")
                 if blob_pathname:
                     set_status(job_id, "running", "downloading")
                     # Prefer explicit env; otherwise same origin as this function
@@ -179,6 +184,7 @@ def create_app() -> FastAPI:
                             # surface the first 200 chars of body to logs to know *why* it's 400
                             err_txt = fr.text[:200] if hasattr(fr, "text") else ""
                             log.error(f"[worker] blob fetch failed: {fr.status_code} body={err_txt!r}")
+                            print(f"[worker] blob fetch failed: {fr.status_code} body={err_txt!r}")
                             raise RuntimeError(f"blob fetch failed: {fr.status_code}")
                         raw = fr.content
                 
@@ -194,6 +200,7 @@ def create_app() -> FastAPI:
                 result = analyze_pipeline(filename or "unknown.pdf", raw, debug=bool(debug), jurisdiction=j)
                 dt = int((time.time() - t0) * 1000)
                 log.info(f"[worker] job_id={job_id} analyze done in {dt}ms")
+                print(f"[worker] job_id={job_id} analyze done in {dt}ms")
 
                 # 兼容 pydantic 模型 / dict
                 out = result.model_dump() if hasattr(result, "model_dump") else result
@@ -202,6 +209,7 @@ def create_app() -> FastAPI:
                 if ok:
                     save_result(job_id, out)
                     log.info(f"[worker] job_id={job_id} -> done")
+                    print(f"[worker] job_id={job_id} -> done")
                     # Best-effort delete the private blob after success
                     try:
                         blob_pathname = blob_pathname or data.get("blob_pathname")
@@ -217,8 +225,10 @@ def create_app() -> FastAPI:
                     err = getattr(result, "error", "unknown error")
                     save_error(job_id, err)
                     log.warning(f"[worker] job_id={job_id} -> error: {err}")
+                    print(f"[worker] job_id={job_id} -> error: {err}")
             except Exception as e:
                 log.error(f"[worker] job_id={job_id} crashed: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+                print(f"[worker] job_id={job_id} crashed: {type(e).__name__}: {e}\n{traceback.format_exc()}")
                 save_error(job_id, f"{type(e).__name__}: {e}")
         return {"handled": handled, "single": single}
     
