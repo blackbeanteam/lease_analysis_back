@@ -113,7 +113,7 @@ def create_app() -> FastAPI:
 
         # Fire-and-forget worker trigger (tolerate cold-start) + clear logs
         try:
-            base_url = (BLOB_HELPER_BASE or str(request.base_url)).rstrip("/")
+            base_url = str(request.base_url).rstrip("/")
             tick = f"{base_url}/worker/tick?single={job_id}"
             # Give it a little more headroom; cold start often > 200ms
             with httpx.Client(timeout=httpx.Timeout(0.8)) as c:
