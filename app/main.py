@@ -113,8 +113,13 @@ def create_app() -> FastAPI:
 
         # Fire-and-forget worker trigger (tolerate cold-start) + clear logs
         try:
-            base_url = str(request.base_url).rstrip("/")
-            tick = f"{base_url}/worker/tick?single={job_id}"
+            #base_url = str(request.base_url).rstrip("/")
+            #tick = f"{base_url}/worker/tick?single={job_id}"
+            
+            scheme = request.headers.get("x-forwarded-proto", "https")
+            host   = request.headers.get("host")
+            tick = f"{scheme}://{host}/worker/tick?single={job_id}"
+    
             # Give it a little more headroom; cold start often > 200ms
             with httpx.Client(timeout=httpx.Timeout(0.8)) as c:
                 r = c.get(tick)
